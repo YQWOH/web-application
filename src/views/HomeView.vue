@@ -42,51 +42,69 @@
   </main>
 </template>
 
-<script setup>
-import { ref } from "vue"
+<script>
+// import { ref } from "vue"
 import axios from "axios"
 import { useRouter } from "vue-router";
 import CityList from "../components/CityList.vue";
 import CityCardSkeleton from "../components/CityCardSkeleton.vue";
+import { useWeatherStore } from "../stores/weather.js";
+// import { storeToRefs } from 'pinia's
+import { mapState } from "pinia"
 
-const router = useRouter();
-
-const previewCity = (searchResult) => {
-  console.log(searchResult);
-  const [city, state] = searchResult.place_name.split(",");
-  router.push({
-    name: 'cityView',
-    params: { state: state.replaceAll(" ", ""), city: city }, 
-    query: {
-        lat: searchResult.geometry.coordinates[1],
-        lng: searchResult.geometry.coordinates[0],
-        preview: true
+export default {
+  components: { CityList, CityCardSkeleton },
+  data() {
+    return {
+      router: useRouter(),
+      mapboxAPIKey: "",
+      // mapboxAPIKey: "pk.eyJ1Ijoic3RldmVud29oIiwiYSI6ImNsaG40YWJ0YjFodzIzc3Fvb2IxMGQ2bHgifQ.GKkU_RjN9_tXt2w6TyfYjw",
+      searchQuery: "",
+      queryTimeout: null,
+      mapboxSearchResults: null,
+      searchError: null
+    };
+  },
+  mounted() {
+    this.mapboxAPIKey = this.getAPIKeyByName("mapbox").apiKey;
+    console.log("this.mapboxAPIKey: ", this.mapboxAPIKey);
+  },
+  methods: {
+    previewCity (searchResult) {
+      console.log(searchResult);
+      const [city, state] = searchResult.place_name.split(",");
+      this.router.push({
+        name: 'cityView',
+        params: { state: state.replaceAll(" ", ""), city: city }, 
+        query: {
+            lat: searchResult.geometry.coordinates[1],
+            lng: searchResult.geometry.coordinates[0],
+            preview: true
+        }
+      })
+    },
+    getSearchResults() {
+      clearTimeout(this.queryTimeout)
+      this.queryTimeout = setTimeout(async () => {
+        if (this.searchQuery !== "") {
+          try{
+            const result = await axios.get(
+              `https://api.mapbox.com/geocoding/v5/mapbox.places/${this.searchQuery}.json?access_token=${this.mapboxAPIKey}&types=place`
+            );
+            this.mapboxSearchResults = result.data.features;
+          } catch {
+            this.searchError = true;
+          }
+          return;
+        }
+        this.mapboxSearchResults = null;
+      }, 300)
     }
-  })
-}
-const mapboxAPIKey = "pk.eyJ1Ijoic3RldmVud29oIiwiYSI6ImNsaG40YWJ0YjFodzIzc3Fvb2IxMGQ2bHgifQ.GKkU_RjN9_tXt2w6TyfYjw"
-const searchQuery = ref("");
-const queryTimeout = ref(null);
-const mapboxSearchResults = ref(null);
-const searchError = ref(null);
-
-
-const getSearchResults = () => {
-  clearTimeout(queryTimeout.value)
-  queryTimeout.value = setTimeout(async () => {
-    if (searchQuery.value !== "") {
-      try{
-        const result = await axios.get(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${searchQuery.value}.json?access_token=${mapboxAPIKey}&types=place`
-        );
-        mapboxSearchResults.value = result.data.features;
-      } catch {
-        searchError.value = true;
-      }
-      return;
-    }
-    mapboxSearchResults.value = null;
-  }, 300)
+  },
+  computed: {
+        ...mapState(useWeatherStore, ["getAPIKeyByName"]),
+        ...mapState(useWeatherStore, ["apiKey"]),
+  },
 }
 </script>
 
