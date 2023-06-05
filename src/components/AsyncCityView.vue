@@ -34,11 +34,11 @@
           }}
         </p>
         <p class="text-8xl mb-8">
-          {{ Math.round(weatherData.current.temp) }}&deg;
+          {{ Math.round(weatherData.current.temp) }}&deg;F
         </p>
         <p>
           Feels like
-          {{ Math.round(weatherData.current.feels_like) }} &deg;
+          {{ Math.round(weatherData.current.feels_like) }} &deg;F
         </p>
         <p class="capitalize">
           {{ weatherData.current.weather[0].description }}
@@ -81,7 +81,7 @@
                 alt=""
               />
               <p class="text-xl">
-                {{ Math.round(hourData.temp) }}&deg;
+                {{ Math.round(hourData.temp) }}&deg;F
               </p>
             </div>
           </div>
@@ -162,7 +162,7 @@
           const weatherData = await axios.get(
             `https://api.openweathermap.org/data/2.5/onecall?lat=${this.route.query.lat}&lon=${this.route.query.lng}&exclude={part}&appid=${this.openWeatherAPIKey}&units=imperial`
           );
-
+          console.log("weatherData: ", weatherData);
           // cal current date & time
           const localOffset = new Date().getTimezoneOffset() * 60000;
           const utc = weatherData.data.current.dt * 1000 + localOffset;
